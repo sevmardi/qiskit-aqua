@@ -127,9 +127,9 @@ class SPSA(Optimizer):
         else:
             logger.debug('Skipping calibration, parameters used as provided.')
 
-        opt, sol, cplus, cminus, tplus, tminus = self._optimization(objective_function, initial_point,
+        opt, sol, cost_total, cplus, cminus, tplus, tminus = self._optimization(objective_function, initial_point,
                                                                     max_trials=self._max_trials, **self._options)
-        return sol, opt, None
+        return sol, opt, cost_total, None
 
     def _optimization(self, obj_fun, initial_theta, max_trials, save_steps=1, last_avg=1):
         """Minimizes obj_fun(theta) with a simultaneous perturbation stochastic
@@ -164,6 +164,9 @@ class SPSA(Optimizer):
         theta_minus_save = []
         cost_plus_save = []
         cost_minus_save = []
+        # new
+        cost_total = []
+        
         theta = initial_theta
         theta_best = np.zeros(initial_theta.shape)
         for k in range(max_trials):
@@ -192,6 +195,7 @@ class SPSA(Optimizer):
                 theta_minus_save.append(theta_minus)
                 cost_plus_save.append(cost_plus)
                 cost_minus_save.append(cost_minus)
+                cost_total.append(obj_fun(theta))
                 # logger.debug('objective function at for step # {}: {:.7f}'.format(k, obj_fun(theta)))
 
             if k >= max_trials - last_avg:
@@ -200,7 +204,7 @@ class SPSA(Optimizer):
         cost_final = obj_fun(theta_best)
         logger.debug('Final objective function is: %.7f' % cost_final)
 
-        return [cost_final, theta_best, cost_plus_save, cost_minus_save,
+        return [cost_final, theta_best, cost_total, cost_plus_save, cost_minus_save,
                 theta_plus_save, theta_minus_save]
 
     def _calibration(self, obj_fun, initial_theta, stat):
